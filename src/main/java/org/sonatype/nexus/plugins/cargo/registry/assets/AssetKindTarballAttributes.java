@@ -47,7 +47,7 @@ public class AssetKindTarballAttributes
 {
     public static final String CONTENT_TYPE_TARBALL = "application/x-tar";
 
-    public static final List<HashAlgorithm> HASH_ALGORITHMS = Lists.newArrayList(HashAlgorithm.SHA1);
+    public static final List<HashAlgorithm> HASH_ALGORITHMS = Lists.newArrayList(HashAlgorithm.SHA1, HashAlgorithm.SHA256);
 
     protected final BucketEntityAdapter bucketEntityAdapter;
 
@@ -83,7 +83,7 @@ public class AssetKindTarballAttributes
         String tarballName = crateAttributes.getCoordinates(component).getFileBasename() + ".crate";
         asset.name(tarballName);
         asset.attributes().set(AssetEntityAdapter.P_ASSET_KIND, AssetKind.TARBALL.name());
-        tx.setBlob(asset, tarballName, Suppliers.ofInstance(tarball), HASH_ALGORITHMS, null, CONTENT_TYPE_TARBALL,
+        tx.setBlob(asset, tarballName, () -> tarball, HASH_ALGORITHMS, null, CONTENT_TYPE_TARBALL,
                 true);
         tx.saveAsset(asset);
 

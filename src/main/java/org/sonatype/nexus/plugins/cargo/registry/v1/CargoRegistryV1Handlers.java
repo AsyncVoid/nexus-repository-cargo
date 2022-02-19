@@ -90,16 +90,13 @@ public final class CargoRegistryV1Handlers
             // 32-bit little-endian length identifier. Split off the JSON and
             // turn the tarball into a Blob as the former needs to be parsed
             // before mapping onto an Asset while the latter is simply stored.
-            LittleEndianDataInputStream requestBody =
-                    new LittleEndianDataInputStream(context.getRequest().getPayload().openInputStream());
-            try {
+            try (LittleEndianDataInputStream requestBody = new LittleEndianDataInputStream(context.getRequest().getPayload().openInputStream())) {
                 int jsonLength = requestBody.readInt();
                 byte[] jsonBytes = new byte[jsonLength];
                 requestBody.readFully(jsonBytes);
                 int tarballLength = requestBody.readInt();
-                InputStream tarball = new BoundedInputStream(requestBody, tarballLength);
 
-                try {
+                try (InputStream tarball = new BoundedInputStream(requestBody, tarballLength)) {
                     // Parse the metadata into a JSON object.
                     JsonParser jsonParser = new JsonParser();
                     JsonElement json = jsonParser.parse(new InputStreamReader(new ByteArrayInputStream(jsonBytes)));
@@ -113,14 +110,12 @@ public final class CargoRegistryV1Handlers
                     Semver crateVersion = new Semver(publishRequest.get("vers").getAsString());
                     CrateCoordinates crateId = new CrateCoordinates(crateName, crateVersion);
 
-                    return cargoImpl.publishCrate(crateId, publishRequest, tarball);
+                    Response response = cargoImpl.publishCrate(crateId, publishRequest, tarball);
+                    if (response.getStatus().isSuccessful()) {
+                        cargoImpl.rebuildIndexForCrate(crateId);
+                    }
+                    return response;
                 }
-                finally {
-                    tarball.close();
-                }
-            }
-            finally {
-                requestBody.close();
             }
         }
     };

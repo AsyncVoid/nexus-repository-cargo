@@ -88,7 +88,7 @@ public class AssetKindObjectAttributes
         // Create a blob from the contents of the InputStream. This will be a
         // unique blob but the object ID may already exist. The blob will be
         // thrown away if it isn't attached to an Asset.
-        AssetBlob assetBlob = tx.createBlob("git-object", Suppliers.ofInstance(contents), hashes, null,
+        AssetBlob assetBlob = tx.createBlob("git-object", () -> contents, hashes, null,
                 CONTENT_TYPE_LOOSE_OBJECT, true);
 
         // If the calculated ObjectId is already saved in the object database,

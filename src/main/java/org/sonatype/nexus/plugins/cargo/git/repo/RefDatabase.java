@@ -180,10 +180,7 @@ public class RefDatabase
 
         // Cannot be the container of an existing reference.
         String prefix = name + '/';
-        if (getRefsByPrefix(prefix).size() != 0)
-            return true;
-
-        return false;
+        return getRefsByPrefix(prefix).size() != 0;
     }
 
 }

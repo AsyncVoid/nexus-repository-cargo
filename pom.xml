@@ -5,11 +5,11 @@
   <parent>
     <groupId>org.sonatype.nexus.plugins</groupId>
     <artifactId>nexus-plugins</artifactId>
-    <version>3.30.1-01</version>
+    <version>3.37.3-02</version>
   </parent>
 
   <artifactId>nexus-repository-cargo</artifactId>
-  <version>0.0.4-SNAPSHOT</version>
+  <version>0.0.5-SNAPSHOT</version>
   <packaging>bundle</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -59,7 +59,7 @@
     <dependency>
       <groupId>com.vdurmont</groupId>
       <artifactId>semver4j</artifactId>
-      <version>2.2.0</version>
+      <version>3.1.0</version>
     </dependency>
   </dependencies>
 
