@@ -13,34 +13,23 @@
 
 package org.sonatype.nexus.plugins.cargo.registry.assets;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.blobstore.api.BlobRef;
 import org.sonatype.nexus.common.hash.HashAlgorithm;
-import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.AssetEntityAdapter;
-import org.sonatype.nexus.repository.storage.Bucket;
-import org.sonatype.nexus.repository.storage.BucketEntityAdapter;
-import org.sonatype.nexus.repository.storage.Component;
-import org.sonatype.nexus.repository.storage.ComponentEntityAdapter;
-import org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter;
-import org.sonatype.nexus.repository.storage.Query;
-import org.sonatype.nexus.repository.storage.StorageTx;
+import org.sonatype.nexus.repository.storage.*;
 import org.sonatype.nexus.repository.transaction.TransactionalTouchBlob;
 import org.sonatype.nexus.repository.transaction.TransactionalTouchMetadata;
 import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.repository.view.payloads.BlobPayload;
 import org.sonatype.nexus.transaction.UnitOfWork;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 @Named
 public class AssetKindTarballAttributes

@@ -11,11 +11,18 @@
  * trademarks or registered trademarks of their respective holders.
  */
 
- Ext.define('NX.cargo.app.PluginConfig', {
+Ext.define('NX.cargo.app.PluginConfig', {
     '@aggregate_priority': 100,
 
     requires: [
         'NX.cargo.app.PluginStrings',
         'NX.cargo.util.CargoRepositoryUrls'
+    ],
+
+    controllers: [
+        {
+            id: 'NX.maven.controller.CargoDependencySnippetController',
+            active: true
+        }
     ]
 });

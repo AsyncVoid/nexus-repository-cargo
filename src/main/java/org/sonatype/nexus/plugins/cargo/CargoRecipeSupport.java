@@ -32,12 +32,7 @@ import org.sonatype.nexus.repository.storage.DefaultComponentMaintenanceImpl;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.UnitOfWorkHandler;
 import org.sonatype.nexus.repository.view.ConfigurableViewFacet;
-import org.sonatype.nexus.repository.view.handlers.BrowseUnsupportedHandler;
-import org.sonatype.nexus.repository.view.handlers.ConditionalRequestHandler;
-import org.sonatype.nexus.repository.view.handlers.ContentHeadersHandler;
-import org.sonatype.nexus.repository.view.handlers.ExceptionHandler;
-import org.sonatype.nexus.repository.view.handlers.HandlerContributor;
-import org.sonatype.nexus.repository.view.handlers.TimingHandler;
+import org.sonatype.nexus.repository.view.handlers.*;
 
 /**
  * Support for Cargo recipes.
@@ -102,7 +97,16 @@ public abstract class CargoRecipeSupport
     @Inject
     protected NegativeCacheHandler negativeCacheHandler;
 
-    protected CargoRecipeSupport(final Type type, final Format format) {
+    protected HighAvailabilitySupportChecker highAvailabilitySupportChecker;
+
+    protected CargoRecipeSupport(final HighAvailabilitySupportChecker highAvailibilitySupportChecker,
+                                 final Type type, final Format format) {
         super(type, format);
+        this.highAvailabilitySupportChecker = highAvailibilitySupportChecker;
+    }
+
+    @Override
+    public boolean isFeatureEnabled() {
+        return highAvailabilitySupportChecker.isSupported(getFormat().getValue());
     }
 }

@@ -34,10 +34,13 @@ import org.sonatype.nexus.repository.view.ConfigurableViewFacet;
 import org.sonatype.nexus.repository.view.Route;
 import org.sonatype.nexus.repository.view.Router;
 import org.sonatype.nexus.repository.view.ViewFacet;
+import org.sonatype.nexus.repository.view.handlers.HighAvailabilitySupportChecker;
 import org.sonatype.nexus.repository.view.matchers.ActionMatcher;
 import org.sonatype.nexus.repository.view.matchers.LiteralMatcher;
 import org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
+import org.sonatype.nexus.security.realm.RealmConfiguration;
+import org.sonatype.nexus.security.realm.RealmManager;
 
 @Named(CargoHostedRecipe.NAME)
 @Singleton
@@ -77,8 +80,10 @@ class CargoHostedRecipe
     protected CargoRegistryV1Handlers.IndexUploadPackService gitUploadPackHandler;
 
     @Inject
-    CargoHostedRecipe(@Named(HostedType.NAME) final Type type, @Named(CargoFormat.NAME) final Format format) {
-        super(type, format);
+    CargoHostedRecipe(final HighAvailabilitySupportChecker highAvailabilitySupportChecker,
+                      @Named(HostedType.NAME) final Type type,
+                      @Named(CargoFormat.NAME) final Format format) {
+        super(highAvailabilitySupportChecker, type, format);
     }
 
     @Override
@@ -98,62 +103,109 @@ class CargoHostedRecipe
 
         // Git HTTP protocol reference discovery
         builder.route(new Route.Builder().matcher(new TokenMatcher("/{repo_name:index}/info/refs"))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(contentHeadersHandler).handler(unitOfWorkHandler)
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
                 .handler(gitInfoRefsHandler).create());
 
         // Git client fetching objects over Smart HTTP protocol
         builder.route(new Route.Builder().matcher(new TokenMatcher("/{repo_name:index}/git-upload-pack"))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(contentHeadersHandler).handler(unitOfWorkHandler)
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
                 .handler(gitUploadPackHandler).create());
 
         // Git client pushing objects over Smart HTTP protocol
         builder.route(new Route.Builder().matcher(new TokenMatcher("/{repo_name:index}/git-receive-pack"))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(contentHeadersHandler).handler(unitOfWorkHandler)
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
                 .handler(gitUploadPackHandler).create());
 
         // Crates.io API v1
         builder.route(new Route.Builder()
-                .matcher(LogicMatchers.and(new ActionMatcher(HttpMethods.GET), new LiteralMatcher("/token")))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(partialFetchHandler).handler(contentHeadersHandler)
-                .handler(unitOfWorkHandler).handler(tokenGetHandler).create());
+                .matcher(LogicMatchers.and(new ActionMatcher(HttpMethods.GET),
+                                LogicMatchers.or(new LiteralMatcher("/token"),
+                                        new LiteralMatcher("/me"))))
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(partialFetchHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
+                .handler(tokenGetHandler).create());
 
         builder.route(new Route.Builder()
-                .matcher(LogicMatchers.and(new ActionMatcher(HttpMethods.DELETE), new LiteralMatcher("/token")))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(partialFetchHandler).handler(contentHeadersHandler)
-                .handler(unitOfWorkHandler).handler(tokenDeleteHandler).create());
+                .matcher(LogicMatchers.and(new ActionMatcher(HttpMethods.DELETE),
+                        LogicMatchers.or(new LiteralMatcher("/token"),
+                                new LiteralMatcher("/me"))))
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(partialFetchHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
+                .handler(tokenDeleteHandler).create());
 
         builder.route(new Route.Builder()
-                .matcher(
-                        LogicMatchers.and(new ActionMatcher(HttpMethods.PUT), new LiteralMatcher("/api/v1/crates/new")))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(partialFetchHandler).handler(contentHeadersHandler)
-                .handler(unitOfWorkHandler).handler(cratePublishHandler).create());
+                .matcher(LogicMatchers.and(new ActionMatcher(HttpMethods.PUT),
+                        new LiteralMatcher("/api/v1/crates/new")))
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(partialFetchHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
+                .handler(cratePublishHandler).create());
 
         builder.route(new Route.Builder()
                 .matcher(LogicMatchers.and(new ActionMatcher(HttpMethods.HEAD, HttpMethods.GET),
                         new TokenMatcher("/api/v1/crates/{name:.+}/{version:.+}/download")))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(partialFetchHandler).handler(contentHeadersHandler)
-                .handler(unitOfWorkHandler).handler(crateDownloadHandler).create());
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(partialFetchHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
+                .handler(crateDownloadHandler)
+                .create());
 
         builder.route(new Route.Builder()
                 .matcher(LogicMatchers.and(new ActionMatcher(HttpMethods.HEAD, HttpMethods.GET),
                         new TokenMatcher("/{name:.+}-{version:.+}.crate")))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(partialFetchHandler).handler(contentHeadersHandler)
-                .handler(unitOfWorkHandler).handler(crateDownloadHandler).create());
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(partialFetchHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
+                .handler(crateDownloadHandler).create());
 
         builder.route(new Route.Builder()
                 .matcher(LogicMatchers.and(new ActionMatcher(HttpMethods.HEAD, HttpMethods.GET),
                         new TokenMatcher("/{name:.+}-{version:.+}.json")))
-                .handler(timingHandler).handler(securityHandler).handler(exceptionHandler)
-                .handler(conditionalRequestHandler).handler(partialFetchHandler).handler(contentHeadersHandler)
-                .handler(unitOfWorkHandler).handler(metadataDownloadHandler).create());
+                .handler(timingHandler)
+                .handler(securityHandler)
+                .handler(exceptionHandler)
+                .handler(conditionalRequestHandler)
+                .handler(partialFetchHandler)
+                .handler(contentHeadersHandler)
+                .handler(unitOfWorkHandler)
+                .handler(metadataDownloadHandler).create());
 
         builder.defaultHandlers(HttpHandlers.notFound());
         facet.configure(builder.create());

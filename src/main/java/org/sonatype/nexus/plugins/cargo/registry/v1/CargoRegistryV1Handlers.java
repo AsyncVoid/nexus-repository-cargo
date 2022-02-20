@@ -90,7 +90,8 @@ public final class CargoRegistryV1Handlers
             // 32-bit little-endian length identifier. Split off the JSON and
             // turn the tarball into a Blob as the former needs to be parsed
             // before mapping onto an Asset while the latter is simply stored.
-            try (LittleEndianDataInputStream requestBody = new LittleEndianDataInputStream(context.getRequest().getPayload().openInputStream())) {
+            try (LittleEndianDataInputStream requestBody
+                         = new LittleEndianDataInputStream(context.getRequest().getPayload().openInputStream())) {
                 int jsonLength = requestBody.readInt();
                 byte[] jsonBytes = new byte[jsonLength];
                 requestBody.readFully(jsonBytes);

@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 
 import org.apache.http.entity.ContentType;
 import org.apache.shiro.authz.AuthorizationException;
+import org.sonatype.nexus.plugins.cargo.CargoRegistryBearerToken;
 import org.sonatype.nexus.repository.http.HttpResponses;
 import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.view.Handler;
@@ -30,6 +31,7 @@ import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.Response;
 import org.sonatype.nexus.repository.view.payloads.StringPayload;
 import org.sonatype.nexus.security.SecurityHelper;
+import org.sonatype.nexus.security.realm.RealmManager;
 
 public class CargoRegistryBearerTokenHandlers
 {
@@ -41,16 +43,31 @@ public class CargoRegistryBearerTokenHandlers
 
         private final CargoRegistryBearerTokenManager tokenManager;
 
+        private final RealmManager realmManager;
+
         @Inject
-        Get(CargoRegistryBearerTokenManager tokenManager, SecurityHelper securityHelper) {
+        Get(CargoRegistryBearerTokenManager tokenManager, SecurityHelper securityHelper, RealmManager realmManager) {
             this.securityHelper = securityHelper;
             this.tokenManager = tokenManager;
+            this.realmManager = realmManager;
+
         }
 
         @Override
         public Response handle(Context context) throws Exception {
             if (!this.securityHelper.subject().isAuthenticated()) {
                 throw new AuthorizationException("Must be authenticated to obtain an API token");
+            }
+
+            if(!realmManager.isRealmEnabled(CargoRegistryBearerToken.NAME)) {
+                Payload payload =
+                        new StringPayload("The Cargo bearer token realm is not active. " +
+                                "Contact your nexus administrator to enable. " +
+                                "Otherwise you can use basic authentication as your token; \"Basic <base64>\" " +
+                                "where <base64> is you username:password in base64 format. " +
+                                "E.g. \"Basic dXNlcjk4NzpwYXNzd29yZDEyMw==\"",
+                                StandardCharsets.UTF_8, ContentType.TEXT_PLAIN.getMimeType());
+                return HttpResponses.ok(payload);
             }
 
             // Clients should provide a JSON request that includes a name for
